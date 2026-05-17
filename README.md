@@ -1,6 +1,6 @@
 # Local Housing Data Pipeline
 
-A data pipeline for collecting, analyzing, and visualizing housing market data for the Raleigh-Cary, NC metro area.
+A data pipeline for collecting, analyzing, and visualizing housing market data for the Raleigh-Durham, NC region (covering the Raleigh-Cary and Durham-Chapel Hill metros).
 
 ## Architecture
 

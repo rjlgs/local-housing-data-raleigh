@@ -8,10 +8,24 @@
       "neighborhoods": []
     },
     {
+      "name": "Durham",
+      "type": "city",
+      "redfin_region_id": "4909",
+      "zip_codes": ["27701", "27703", "27704", "27705", "27707", "27709", "27712", "27713"],
+      "neighborhoods": []
+    },
+    {
       "name": "Cary",
       "type": "city",
       "redfin_region_id": "35713",
       "zip_codes": ["27511", "27513", "27518", "27519"],
+      "neighborhoods": []
+    },
+    {
+      "name": "Chapel Hill",
+      "type": "city",
+      "redfin_region_id": "3059",
+      "zip_codes": ["27514", "27516", "27517"],
       "neighborhoods": []
     },
     {
@@ -55,17 +69,44 @@
       "redfin_region_id": "6517",
       "zip_codes": ["27526"],
       "neighborhoods": []
+    },
+    {
+      "name": "Carrboro",
+      "type": "city",
+      "redfin_region_id": "2736",
+      "zip_codes": ["27510"],
+      "neighborhoods": []
+    },
+    {
+      "name": "Hillsborough",
+      "type": "city",
+      "redfin_region_id": "8085",
+      "zip_codes": ["27278"],
+      "neighborhoods": []
     }
   ],
   "metro": {
-    "name": "Raleigh-Cary",
+    "name": "Raleigh-Durham",
     "redfin_metro_code": "39580",
     "redfin_market_slug": "raleigh",
     "state_code": "NC",
-    "map_center": [35.7796, -78.6382],
-    "map_zoom": 10,
-    "baseline_city": "Raleigh"
+    "map_center": [35.85, -78.78],
+    "map_zoom": 9,
+    "baseline_city": "Raleigh",
+    "baseline_cities": ["Raleigh", "Durham"]
   },
+  "redfin_metros": [
+    {
+      "name": "Raleigh-Cary",
+      "redfin_metro_code": "39580",
+      "redfin_market_slug": "raleigh"
+    },
+    {
+      "name": "Durham-Chapel Hill",
+      "redfin_metro_code": "20500",
+      "redfin_market_slug": "durham"
+    }
+  ],
   "cities": [
     { "region_id": "35711", "name": "Raleigh" },
     { "region_id": "35713", "name": "Cary" },

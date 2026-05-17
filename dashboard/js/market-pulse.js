@@ -15,7 +15,17 @@ const MarketPulse = {
   init(container, data) {
     const trends = data.market_trends;
     const zipAreas = data.zip_areas || [];
-    const baselineCity = (data.config && data.config.metro && data.config.metro.baseline_city) || '';
+    const metroCfg = (data.config && data.config.metro) || {};
+    const baselineCity = metroCfg.baseline_city || '';
+    const baselineCities = Array.isArray(metroCfg.baseline_cities) && metroCfg.baseline_cities.length
+      ? metroCfg.baseline_cities.slice()
+      : (baselineCity ? [baselineCity] : []);
+    // Ensure primary baseline city is first
+    if (baselineCity && baselineCities[0] !== baselineCity) {
+      const idx = baselineCities.indexOf(baselineCity);
+      if (idx > 0) baselineCities.splice(idx, 1);
+      baselineCities.unshift(baselineCity);
+    }
     const trendOptions = Utils.TREND_TYPES.map(t =>
       `<option value="${t}">${Utils.TREND_LABELS[t]}</option>`
     ).join('');
@@ -91,13 +101,15 @@ const MarketPulse = {
 
     // Build the area options list
     this._baselineCity = baselineCity;
+    this._baselineCities = baselineCities;
     const allAreas = this._buildAreaList(zipAreas, trends);
 
-    // Restore saved active areas, or default to baseline city
+    // Restore saved active areas, or default to baseline cities
     const savedAreas = Prefs.get('mp.activeAreas');
+    const defaultActive = baselineCities.filter(c => trends[c]);
     this._activeAreas = savedAreas
       ? new Set(savedAreas.filter(k => allAreas.some(a => a.key === k)))
-      : new Set(trends[baselineCity] ? [baselineCity] : []);
+      : new Set(defaultActive);
 
     // Zip map popover
     this._initZipMap(allAreas, trends);
@@ -138,16 +150,19 @@ const MarketPulse = {
     const areas = [];
     let colorIdx = 0;
 
-    // Metro baseline city
-    const bc = this._baselineCity;
-    if (bc && trends[bc]) {
+    // Metro baseline city/cities
+    const baselineList = (this._baselineCities && this._baselineCities.length)
+      ? this._baselineCities
+      : (this._baselineCity ? [this._baselineCity] : []);
+    baselineList.forEach((bc, i) => {
+      if (!trends[bc]) return;
       areas.push({
         key: bc,
         label: `${bc} (Metro)`,
-        color: Utils.baselineColor,
+        color: i === 0 ? Utils.baselineColor : Utils.colorFor(colorIdx++),
         dash: 'solid',
       });
-    }
+    });
 
     // All zip areas from the data
     zipAreas.forEach(za => {
@@ -464,20 +479,25 @@ const MarketPulse = {
   _renderBuyerScore(trends, allAreas) {
     const container = document.getElementById('buyer-score-card');
 
-    // Metro score with full breakdown + history
-    const bc = this._baselineCity;
-    const baseRecords = (bc && trends[bc]) || [];
-    const metroHtml = this._renderScoreCard(
-      this._computeScore(baseRecords),
-      `Buyer Favorability Score (${bc || 'Metro'})`,
-      true,
-      baseRecords
-    );
+    // Metro score(s) with full breakdown + history — one per baseline city
+    const baselineList = (this._baselineCities && this._baselineCities.length)
+      ? this._baselineCities
+      : (this._baselineCity ? [this._baselineCity] : []);
+    const baselineKeys = new Set(baselineList);
+    const metroHtml = baselineList.map(bc => {
+      const baseRecords = (bc && trends[bc]) || [];
+      return this._renderScoreCard(
+        this._computeScore(baseRecords),
+        `Buyer Favorability Score (${bc || 'Metro'})`,
+        true,
+        baseRecords
+      );
+    }).join('');
 
     // Per-area scores (compact — no breakdown)
     const periods = [3, 6, 12, 24];
     const areaScores = allAreas
-      .filter(a => a.key !== bc && this._activeAreas.has(a.key) && trends[a.key] && trends[a.key].length > 0)
+      .filter(a => !baselineKeys.has(a.key) && this._activeAreas.has(a.key) && trends[a.key] && trends[a.key].length > 0)
       .map(a => ({ area: a, score: this._computeScore(trends[a.key]), records: trends[a.key] }))
       .filter(s => s.score);
 
@@ -517,9 +537,14 @@ const MarketPulse = {
     allAreas.forEach(a => { areaByKey[a.key] = a; });
 
     // Build score data for active non-metro zip areas
+    const baselineKeys = new Set(
+      (this._baselineCities && this._baselineCities.length)
+        ? this._baselineCities
+        : (this._baselineCity ? [this._baselineCity] : [])
+    );
     const scoreData = {};
     allAreas.forEach(a => {
-      if (a.key === this._baselineCity || !this._activeAreas.has(a.key)) return;
+      if (baselineKeys.has(a.key) || !this._activeAreas.has(a.key)) return;
       const records = trends[a.key];
       if (records && records.length > 0) {
         scoreData[a.key] = { score: this._computeScore(records), records };

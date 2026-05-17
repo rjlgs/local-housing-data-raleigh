@@ -2,10 +2,17 @@
 
 ## Geographic Scope
 
-All scripts target the **Raleigh-Cary, NC MSA** (Redfin metro code 39580):
-- **Redfin Market:** All cities/zips in metro 39580 (Raleigh, Cary, Apex, Garner, etc.)
-- **Redfin Sold:** Cities in metro 39580 listed in `config.json → cities[]`
-- **Redfin Active:** Same cities as sold, currently active for-sale listings
+All scripts target the **Raleigh-Durham, NC** region, spanning two Redfin metros:
+- **Raleigh-Cary MSA** (Redfin metro code 39580)
+- **Durham-Chapel Hill MSA** (Redfin metro code 20500)
+
+Configured in `config.json`:
+- `metro` — primary metro descriptor (display name, map center, market slug used by city-level fetchers)
+- `redfin_metros` — list of all metros pulled for city/zip-level **market trend** data
+- `cities[]` — every city pulled for individual sold + active listings (spans both metros)
+- `metro.baseline_cities` — cities shown with full Buyer Favorability breakdown on Market Pulse
+
+The sold and active fetchers iterate `cities[]` by region_id, so they pull every configured city regardless of which metro it belongs to. Only `fetch_market_trends.py` filters by metro code, and it iterates over `redfin_metros`.
 
 ## Entry Point
 

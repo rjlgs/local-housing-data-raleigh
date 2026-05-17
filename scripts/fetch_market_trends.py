@@ -74,9 +74,15 @@ def check_etag(url):
         return None
 
 
-def stream_and_filter(url, level, metro_code, metro_name):
-    """Stream gzipped TSV from S3, filter line-by-line for the configured metro."""
+def stream_and_filter(url, level, metros):
+    """Stream gzipped TSV from S3, filter line-by-line for the configured metros.
+
+    metros: list of dicts with keys 'redfin_metro_code' and 'name'.
+    """
     print(f"  Streaming {level}-level data (this may take a few minutes)...")
+
+    metro_codes = {m["redfin_metro_code"] for m in metros}
+    metro_label = ", ".join(f"{m['name']} ({m['redfin_metro_code']})" for m in metros)
 
     # Pipe: curl streams the gzipped file, gunzip decompresses on the fly
     proc = subprocess.Popen(
@@ -105,7 +111,7 @@ def stream_and_filter(url, level, metro_code, metro_name):
         proc.kill()
         return []
 
-    print(f"  Scanning for {metro_name} metro (code {metro_code})...")
+    print(f"  Scanning for metros: {metro_label}...")
 
     rows = []
     lines_scanned = 0
@@ -117,9 +123,9 @@ def stream_and_filter(url, level, metro_code, metro_name):
             print(f"    ...scanned {lines_scanned:,} lines, {matches:,} matches so far",
                   flush=True)
 
-        # Quick check: does this line contain the metro code at all?
-        # This is faster than splitting every line
-        if metro_code not in line:
+        # Quick check: does this line contain any of the metro codes at all?
+        # This is faster than splitting every line.
+        if not any(code in line for code in metro_codes):
             continue
 
         values = line.strip().split('\t')
@@ -128,7 +134,7 @@ def stream_and_filter(url, level, metro_code, metro_name):
 
         # Verify the metro code is in the right column (not a false positive)
         metro_val = values[metro_col_idx].strip('"')
-        if metro_val != metro_code:
+        if metro_val not in metro_codes:
             continue
 
         matches += 1
@@ -159,8 +165,9 @@ def main():
 
     with open(os.path.join(project_root, "config.json")) as f:
         config = json.load(f)
-    metro_code = config["metro"]["redfin_metro_code"]
-    metro_name = config["metro"]["name"]
+
+    # Support multiple metros via top-level `redfin_metros` list; fall back to single `metro`.
+    metros = config.get("redfin_metros") or [config["metro"]]
 
     any_updated = False
 
@@ -180,8 +187,8 @@ def main():
             if current_etag:
                 etag_cache[level] = {"etag": current_etag, "url": url}
 
-        rows = stream_and_filter(url, level, metro_code, metro_name)
-        print(f"  Found {len(rows):,} {metro_name} metro records.")
+        rows = stream_and_filter(url, level, metros)
+        print(f"  Found {len(rows):,} records across {len(metros)} metro(s).")
 
         if not rows:
             print(f"  WARNING: No data found for {level}. Skipping.")
