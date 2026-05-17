@@ -69,6 +69,11 @@ jobs:
       # Run the data pipeline (main branch only)
       - name: Run pipeline
         if: github.ref == 'refs/heads/main'
+        env:
+          # Cap photo URL fetches per run. With ~9.5k listings and 0.5s/fetch,
+          # a full cold build takes ~80min. Capping at 500/run keeps each run
+          # under ~5min; daily cron will fill the cache over ~3 weeks.
+          MAX_PHOTOS_PER_RUN: '500'
         run: |
           FLAGS=""
           if [ "${{ inputs.skip_visual_quality }}" = "true" ]; then

@@ -415,18 +415,30 @@ def fetch_photo_urls(homes, force=False):
             cache = json.load(f)
 
     to_fetch = [h for h in homes if h.get("redfin_url") and h["redfin_url"] not in cache]
-    print(f"  {len(cache)} cached, {len(to_fetch)} to fetch")
+    print(f"  {len(cache)} cached, {len(to_fetch)} to fetch", flush=True)
 
     if os.environ.get("SKIP_PHOTO_FETCH"):
-        print("  SKIP_PHOTO_FETCH set — skipping photo URL fetches")
+        print("  SKIP_PHOTO_FETCH set — skipping photo URL fetches", flush=True)
         to_fetch = []
+
+    # Cap the number of photos fetched per run so the pipeline stays under
+    # ~5 minutes. Daily cron runs gradually fill in the rest of the cache.
+    max_per_run_env = os.environ.get("MAX_PHOTOS_PER_RUN")
+    if max_per_run_env:
+        try:
+            max_per_run = int(max_per_run_env)
+        except ValueError:
+            max_per_run = 500
+        if max_per_run >= 0 and len(to_fetch) > max_per_run:
+            print(f"  MAX_PHOTOS_PER_RUN={max_per_run} — deferring {len(to_fetch) - max_per_run} fetches", flush=True)
+            to_fetch = to_fetch[:max_per_run]
 
     for i, home in enumerate(to_fetch):
         url = home["redfin_url"]
         photos = fetch_photo_url(url)
         cache[url] = photos  # cache None too, to avoid retrying broken pages
         if (i + 1) % 25 == 0:
-            print(f"    Fetched {i + 1}/{len(to_fetch)}...")
+            print(f"    Fetched {i + 1}/{len(to_fetch)}...", flush=True)
         time.sleep(0.5)
 
     # Save updated cache
