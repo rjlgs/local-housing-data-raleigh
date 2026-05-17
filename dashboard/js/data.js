@@ -7,7 +7,10 @@ const DataLoader = {
 
   async load() {
     try {
-      const resp = await fetch('../data/dashboard_data.json');
+      // GitHub Pages caches dashboard_data.json for 10min by default; force a
+      // network revalidation so stale data doesn't haunt visitors after each
+      // pipeline run.
+      const resp = await fetch('../data/dashboard_data.json', { cache: 'no-cache' });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       this.data = await resp.json();
       console.log(`Dashboard data loaded: ${this.data.sold_homes.length} homes, ` +
