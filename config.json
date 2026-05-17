@@ -86,7 +86,8 @@
     "map_center": [35.85, -78.78],
     "map_zoom": 9,
     "baseline_city": "Durham",
-    "baseline_cities": ["Durham"]
+    "baseline_cities": ["Durham"],
+    "default_areas": ["27713", "27703", "27707", "27705", "27712", "27704", "27701"]
   },
   "redfin_metros": [
     {

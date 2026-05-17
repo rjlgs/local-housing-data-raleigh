@@ -104,9 +104,14 @@ const MarketPulse = {
     this._baselineCities = baselineCities;
     const allAreas = this._buildAreaList(zipAreas, trends);
 
-    // Restore saved active areas, or default to baseline cities
+    // Restore saved active areas, or fall back to config-driven defaults
+    // (metro.default_areas, then baseline cities).
     const savedAreas = Prefs.get('mp.activeAreas');
-    const defaultActive = baselineCities.filter(c => trends[c]);
+    const configDefaults = (metroCfg.default_areas || []).map(a =>
+      /^\d{5}$/.test(a) ? `Zip Code: ${a}` : a
+    );
+    const defaultActive = (configDefaults.length ? configDefaults : baselineCities)
+      .filter(k => trends[k]);
     this._activeAreas = savedAreas
       ? new Set(savedAreas.filter(k => allAreas.some(a => a.key === k)))
       : new Set(defaultActive);
